@@ -1,6 +1,10 @@
+//KQ
 const messageInput = document.querySelector(".message-input");
 const chatbody = document.querySelector(".chat_body");
 const sendMessageButton = document.querySelector("#send-message");
+
+const API_KEY = "AIzaSyDgVUKXAU48wzNnayc5VQogIxCPzWx3T"
+const api_url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`
 
 const userData = {
     message: null
@@ -13,6 +17,36 @@ const createMessageelement = (content, ...classes) => {
     return div
 }
 
+//generate bot resposne
+const generateBotResponse = async (incomingMessageDiv) => {
+    const messageElement = incomingMessageDiv.querySelector(".message-text")
+
+    const requestOptions = {
+        method: "post",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            "contents": [{
+                "parts": [{ "text": userData.message }]
+            }]
+        })
+    }
+
+    try {
+        //fetch bot response from api
+        const response = await fetch(api_url, requestOptions)
+        const data = await response.json()
+        if (!response.ok) throw new Error(data.error.message)
+
+        //display bots response
+        const apiResponsetext = data.candidates[0].content.parts[0].text.replace(/\*\*(.*?)\*\*/g, "$1").trim()
+        messageElement.innerText = apiResponsetext
+    } catch (err) {
+        console.log(err)
+    } finally{
+        incomingMessageDiv.classList.remove("thinking")
+        chatbody.scrollTo({top: chatbody.scrollHeight, behavior: "smooth"});
+    }
+}
 
 const handleOutgoingMessage = (e) => {
     e.preventDefault()
@@ -24,6 +58,8 @@ const handleOutgoingMessage = (e) => {
     const outGoingMessageDiv = createMessageelement(messageContent, "user-message")
     outGoingMessageDiv.querySelector(".message-text").innerText = userData.message
     chatbody.appendChild(outGoingMessageDiv)
+    chatbody.scrollTo({top: chatbody.scrollHeight, behavior: "smooth"});
+
 
     //bot response with a thinking indicator with delay
     setTimeout(() => {
@@ -41,6 +77,8 @@ const handleOutgoingMessage = (e) => {
     </div>`
         const incomingMessageDiv = createMessageelement(messageContent, "bot-message", "thinking")
         chatbody.appendChild(incomingMessageDiv)
+        chatbody.scrollTo({top: chatbody.scrollHeight, behavior: "smooth"});
+        generateBotResponse(incomingMessageDiv);
     }, 600);
 }
 
